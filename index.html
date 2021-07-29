@@ -1,151 +1,49 @@
 <html>
-  <script src="https://d3js.org/d3.v6.min.js"></script>
-  <style>
-    circle {
-      fill: lightblue;
-      stroke: black;
-    }
-  </style>
-  <body onload="init()">
-    <svg width="800" height="600"></svg>
-    <script>
-      const colors = [
-        "gold",
-        "blue",
-        "green",
-        "yellow",
-        "black",
-        "grey",
-        "darkgreen",
-        "pink",
-        "brown",
-        "slateblue",
-        "grey1",
-        "orange",
-      ];
-      // Define chart dimension
-
-      const svg = d3.select("svg");
-      const yAccessor = (d) => d.CumMats;
-      const xAccessor = (d) => d.Year;
-      const array_column = (array, column) => array.map((e) => e[column]);
-
-      let dimensions = {
-        width: svg.attr("width"),
-        heigth: svg.attr("height"),
-        margin: {
-          top: 50,
-          right: 50,
-          bottom: 50,
-          left: 80,
-        },
-      };
-
-      dimensions.boundedWidth =
-        dimensions.width - dimensions.margin.left - dimensions.margin.right;
-
-      dimensions.boundedHeight =
-        dimensions.heigth - dimensions.margin.top - dimensions.margin.bottom;
-
-      svg.attr("width", dimensions.width).attr("height", dimensions.heigth);
-
-      // Create a bounding box
-      const bounds = svg
-        .append("g")
-        .style(
-          "transform",
-          `translate(${dimensions.margin.left}px,${dimensions.margin.top}px)`
-        );
-
-      async function init() {
-        // read data
-        const teamData = await d3.csv("teams_overall.csv");
-        var matchData = await d3.csv("match_overall.csv");
-
-        const teamList = teamData
-          .map((d) => d.Team)
-          .filter((d) => d != "ICC World XI");
-        // console.log(teamList);
-
-        matchData = enrichMatchData(matchData);
-        // draw chart for all teams
-        const allMatchDdata = matchData.filter((d) => d["Team"] != "All");
-
-        // domain and range of scales
-        const yScale = d3
-          .scaleLinear()
-          .domain(d3.extent(allMatchDdata, yAccessor))
-          .range([dimensions.boundedHeight, 0]);
-
-        const xScale = d3
-          .scaleLinear()
-          .domain(d3.extent(allMatchDdata, xAccessor))
-          .range([0, dimensions.boundedWidth]);
-
-        // drawChart("main", allMatchDdata, xScale, yScale, "red");
-
-        //draw team based chart
-        teamList.forEach(function (d, i) {
-          let teamData = matchData.filter((t) => t["Team"] == d);
-
-          // if (i == 11) {
-          //   console.table(teamData);
-          // }
-          // console.log(i, d);
-          console.log(i, d, colors[i]);
-          drawChart(teamData, xScale, yScale, colors[i]);
-        });
-      }
-
-      function drawChart(data, xScale, yScale, color) {
-        // convert datapoints into X, Y value
-        const lineGenerator = d3
-          .line()
-          .x((d) => xScale(xAccessor(d)))
-          .y((d) => yScale(yAccessor(d)))
-          .curve(d3.curveBasis);
-
-        // Convert X,Y into Path
-        const line = bounds
-          .append("path")
-          .attr("d", lineGenerator(data))
-          .attr("fill", "none")
-          .attr("stroke", color)
-          .attr("stroke-width", 3);
-
-        // Create X & Y Axis
-        const yAxisGenerator = d3.axisLeft().scale(yScale);
-        const xAxisGenerator = d3
-          .axisBottom()
-          .scale(xScale)
-          .tickFormat(d3.format("d"))
-          .ticks(25);
-
-        const yAxis = bounds.append("g").call(yAxisGenerator);
-
-        const xAxis = bounds
-          .append("g")
-          .call(xAxisGenerator)
-          .style("transform", `translateY(${dimensions.boundedHeight}px)`);
-      }
-
-      function enrichMatchData(matchData) {
-        var prevTeam = "";
-        matchData.forEach(function (d, i) {
-          // console.log(prevTeam, d.Team);
-          if (prevTeam != d.Team) {
-            prevRunSum = 0;
-            prevMatSum = 0;
-          }
-          d.CumRuns = prevRunSum + parseInt(d.Runs);
-          d.CumMats = prevMatSum + parseInt(d.Mat);
-          prevTeam = d.Team;
-          prevRunSum = d.CumRuns;
-          prevMatSum = d.CumMats;
-          d.AvgRun = d.Runs / d.Mat;
-        });
-        return matchData;
-      }
-    </script>
+  <body onload="showMainChart()">
+    <h1>Test Cricket History (1877 - 2021)</h1>
+    <div id="main-page" class="main-page">
+      <div id="main-page-desc" class="main-page-desc">
+        <h3>Test Cricket</h3>
+      </div>
+      <div id="nav-row">
+        <a id="toggle-btn" class="button"></a>
+      </div>
+      <div id="main-page-chart-containter" class="float-container">
+        <div id="main-page-chart"></div>
+        <svg width="800" height="600"></svg>
+        <div id="team-details" class="custom-tooltip closed">
+          <div id="custom-tooltip-header" class="custom-tooltip-header">
+            <div id="td-team-name"></div>
+            <div id="td-test-status-year" class="custom-tooltip-text"></div>
+          </div>
+          <table>
+            <tr>
+              <td class="col-header">#Matches</td>
+              <td id="td-team-matches" class="col-data col-data-right"></td>
+            </tr>
+            <tr>
+              <td class="col-header">#Won</td>
+              <td id="td-team-won" class="col-data col-data-right"></td>
+            </tr>
+            <tr>
+              <td class="col-header">#Lost</td>
+              <td id="td-team-lost" class="col-data col-data-right"></td>
+            </tr>
+            <tr>
+              <td class="col-header">#Undecided</td>
+              <td id="td-team-undecided" class="col-data col-data-right"></td>
+            </tr>
+            <tr>
+              <td class="col-header">#Runs</td>
+              <td id="td-team-runs" class="col-data col-data-right"></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
   </body>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
+  <script src="charts.js"></script>
 </html>
