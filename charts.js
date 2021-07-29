@@ -30,6 +30,7 @@ const colors = [
 // Define chart dimension
 
 var svg = d3.select("svg");
+const chartContainer = "#main-page-chart-containter";
 const tooltips = document.querySelectorAll(".custom-tooltip");
 const cutOffYear = 2021;
 
@@ -38,13 +39,14 @@ const dimensions = calculateDimension();
 const yAccessor = (d) => d.CumMats;
 const xAccessor = (d) => d.Year;
 const array_column = (array, column) => array.map((e) => e[column]);
-var teamData, matchData, teamList;
 const xScale = d3.scaleLinear().range([0, dimensions.boundedWidth]);
 const yScale = d3.scaleLinear().range([dimensions.boundedHeight, 0]);
 const xAxisGenerator = d3.axisBottom().scale(xScale).ticks(13);
 const yAxisGenerator = d3.axisLeft().scale(yScale);
 
 var simulation;
+var teamData, matchData, teamList;
+var bounds;
 
 const lineSelector = d3
   .line()
@@ -62,14 +64,6 @@ window.onmousemove = (e) => {
 
 svg.attr("width", dimensions.width).attr("height", dimensions.heigth);
 
-// Create a bounding box
-const bounds = svg
-  .append("g")
-  .style(
-    "transform",
-    `translate(${dimensions.margin.left}px,${dimensions.margin.top}px)`
-  );
-
 async function showMainChart() {
   // read data
   var matchDataOverAll = await d3.csv("match_overall.csv", (d) =>
@@ -80,32 +74,33 @@ async function showMainChart() {
   );
   teamList = teamData.map((d) => d.Team);
 
-  // generateLineChart(matchDataOverAll);
+  generateLineChart(matchDataOverAll);
 
-  generateBubbleChart();
+  // generateBubbleChart();
+
+  // generateLineChart(matchDataOverAll);
 }
 
 /*
  Various functions
 */
 
-function generateBubbleChart() {
-  var formattedTeamData = enrichTeamData(teamData);
-  console.table(formattedTeamData);
+function recycleSvgContainter() {
+  d3.select(chartContainer).select("svg").remove();
 
-  drawBubbleChart(formattedTeamData, "#page-1-vis");
+  svg = d3
+    .select(chartContainer)
+    .append("svg")
+    .attr("width", dimensions.width)
+    .attr("height", dimensions.heigth);
 }
 
-function drawBubbleChart(data, visId) {
-  let forceStrength = 0.04;
-
+function generateBubbleChart() {
+  const formattedTeamData = enrichTeamData(teamData);
+  const nodes = generateBubbleNodes(formattedTeamData);
   const center = { x: dimensions.width / 2, y: dimensions.heigth / 2 };
 
-  let svg = null;
-  let bubbles = null;
-
-  let labels = null;
-  let nodes = [];
+  const forceStrength = 0.04;
 
   simulation = d3
     .forceSimulation()
@@ -117,69 +112,63 @@ function drawBubbleChart(data, visId) {
     .force("y", d3.forceY().strength(forceStrength).y(center.y))
     .force("center", d3.forceCenter(center.x, center.y));
 
-  if (visId == "#page-1-vis") {
-    window.setTimeout(function () {
-      simulation = simulation.force(
-        "collision",
-        d3.forceCollide().radius((d) => d.radius * 1.25)
-      );
-    }, 500);
-  } else {
+  window.setTimeout(function () {
     simulation = simulation.force(
       "collision",
       d3.forceCollide().radius((d) => d.radius * 1.25)
     );
-  }
+  }, 800);
 
-  chart("#main-page-chart-containter", data);
+  recycleSvgContainter();
+
+  drawBubbleChart(nodes);
 }
 
-function chart(selector, data) {
-  nodes = generateNodes(data);
-
-  console.log(nodes);
-  console.log(d3.select(selector).select("svg"));
-
-  d3.select(selector).select("svg").remove();
-
-  svg = d3
-    .select(selector)
-    .append("svg")
-    .attr("width", dimensions.width)
-    .attr("height", dimensions.heigth);
-
+function drawBubbleChart(nodes) {
   const elements = svg
     .selectAll(".bubble")
-    .data(nodes, (d) => {
-      console.log(d);
-      return d.Team;
-    })
+    .data(nodes, (d) => d.Team)
     .enter()
     .append("g");
 
-  bubbles = elements
+  const bubbles = elements
     .append("circle")
     .classed("bubble", true)
     .attr("r", (d) => d.radius)
     .attr("team-id", (d) => d.Team)
-    .attr("fill", "purple")
+    .attr("fill", (d) => d.Color)
     .attr("stroke", (d) => d.Color)
-    .attr("stroke-width", 4);
+    .attr("stroke-width", 4)
+    .on("mouseover", handleMouseOverBubble)
+    .on("mouseout", handleMouseOutBubble)
+    .on("click", handleMouseClick);
+
+  // labels
+  const labels = elements
+    .append("text")
+    .attr("team-id", (d) => d.Team)
+    .classed("bubble-label", true)
+    .attr("dy", ".3em")
+    .attr("id", (d) => "bubble-label-" + d.Team)
+    .style("text-anchor", "middle")
+    .style("font-size", 20)
+    .style("fill", (d) => d.Color)
+    .text((d) => (d.Mat > 45 ? d.Flag : ""))
+    .on("mouseover", handleMouseOverBubble)
+    .on("mouseout", handleMouseOutBubble)
+    .on("click", handleMouseClick);
 
   simulation
     .nodes(nodes)
     .on("tick", () => {
       bubbles.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
-      // labels.attr("x", (d) => d.x).attr("y", (d) => d.y);
+      labels.attr("x", (d) => d.x).attr("y", (d) => d.y);
     })
     .restart();
-
-  // console.log(svg);
 }
 
-function generateNodes(data) {
+function generateBubbleNodes(data) {
   const maxSize = d3.max(data, (d) => 4 + d.Mat * 5);
-  console.log(maxSize);
 
   const radiusScale = d3
     .scaleSqrt()
@@ -198,6 +187,16 @@ function generateNodes(data) {
 function generateLineChart(matchDataOverAll) {
   //data preparation
   matchData = enrichMatchData(matchDataOverAll);
+
+  recycleSvgContainter();
+
+  // Create a bounding box
+  bounds = svg
+    .append("g")
+    .style(
+      "transform",
+      `translate(${dimensions.margin.left}px,${dimensions.margin.top}px)`
+    );
 
   // domain and range of scales
   setXYDomain(matchData);
@@ -434,6 +433,36 @@ function handleMouseClick(d, i) {
   // window.location = basePath;
 }
 
+// Create Event Handlers for mouse
+function handleMouseOverBubble(d, i) {
+  d3.select(this).attr("r", d.radius * 1.2);
+
+  document.getElementById("team-details").classList.remove("closed");
+  document.getElementById("td-team-name").innerHTML = d.Team;
+  document.getElementById("td-test-status-year").innerHTML =
+    "Started in " + d.StartYear;
+
+  document.getElementById("td-team-matches").innerHTML = d.Mat.toLocaleString();
+  document.getElementById("td-team-won").innerHTML = d.Won.toLocaleString();
+  document.getElementById("td-team-lost").innerHTML = d.Lost.toLocaleString();
+  document.getElementById("td-team-undecided").innerHTML =
+    d.Undecided.toLocaleString();
+  document.getElementById("row-runs").style.display = "none";
+}
+
+function handleMouseOutBubble(d, i) {
+  handleMouseOut(d, i);
+  document.getElementById("row-runs").style.display = "";
+  d3.select(this).attr("r", d.radius);
+}
+
+function handleMouseClickBubble(d, i) {
+  // selectedConstructor = constructor_arr.find((c) => c.id == d.id);
+  // // console.log("selected constructor", selectedConstructor);
+  // document.getElementById("page-1").classList.toggle("closed");
+  handleMouseClick();
+}
+
 function enrichMatchData(data) {
   var prevTeam = "";
   data.forEach(function (d, i) {
@@ -478,6 +507,7 @@ function enrichTeamData(data) {
   data.forEach((d, i) => {
     teamMatchData.push({
       Team: d.Team,
+      StartYear: d.Span.split("-")[0],
       Mat: Number(d.Mat),
       Won: Number(d.Won),
       Lost: Number(d.Lost),
