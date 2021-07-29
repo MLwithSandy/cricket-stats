@@ -27,6 +27,8 @@ const colors = [
   "grey1",
   "orange",
 ];
+
+const chartList = ["svg-line-chart", "svg-bubble-chart"];
 // Define chart dimension
 
 var svg = d3.select("svg");
@@ -45,7 +47,7 @@ const xAxisGenerator = d3.axisBottom().scale(xScale).ticks(13);
 const yAxisGenerator = d3.axisLeft().scale(yScale);
 
 var simulation;
-var teamData, matchData, teamList;
+var teamData, matchData, teamList, matchDataOverAll;
 var bounds;
 
 const lineSelector = d3
@@ -66,7 +68,7 @@ svg.attr("width", dimensions.width).attr("height", dimensions.heigth);
 
 async function showMainChart() {
   // read data
-  var matchDataOverAll = await d3.csv("match_overall.csv", (d) =>
+  matchDataOverAll = await d3.csv("match_overall.csv", (d) =>
     d.Team != "All" ? d : null
   );
   teamData = await d3.csv("teams_overall.csv", (d) =>
@@ -74,7 +76,7 @@ async function showMainChart() {
   );
   teamList = teamData.map((d) => d.Team);
 
-  generateLineChart(matchDataOverAll);
+  generateLineChart();
 
   // generateBubbleChart();
 
@@ -85,12 +87,40 @@ async function showMainChart() {
  Various functions
 */
 
-function recycleSvgContainter() {
+function prevChart() {
+  const chartClass = d3.select(chartContainer).select("svg").attr("class");
+  const chartIdx = chartList.indexOf(chartClass);
+
+  showChart(chartIdx > 0 ? chartIdx - 1 : chartIdx);
+}
+
+function nextChart() {
+  const chartClass = d3.select(chartContainer).select("svg").attr("class");
+  const chartIdx = chartList.indexOf(chartClass);
+
+  showChart(chartIdx < chartList.length - 1 ? chartIdx + 1 : chartIdx);
+}
+
+function showChart(chartIdx) {
+  switch (chartList[chartIdx]) {
+    case "svg-line-chart":
+      generateLineChart();
+      break;
+    case "svg-bubble-chart":
+      generateBubbleChart();
+      break;
+    default:
+      generateLineChart();
+  }
+}
+
+function recycleSvgContainter(svgClass) {
   d3.select(chartContainer).select("svg").remove();
 
   svg = d3
     .select(chartContainer)
     .append("svg")
+    .attr("class", svgClass)
     .attr("width", dimensions.width)
     .attr("height", dimensions.heigth);
 }
@@ -119,7 +149,7 @@ function generateBubbleChart() {
     );
   }, 800);
 
-  recycleSvgContainter();
+  recycleSvgContainter(chartList[1]);
 
   drawBubbleChart(nodes);
 }
@@ -184,11 +214,11 @@ function generateBubbleNodes(data) {
   return bubbleChartNodes;
 }
 
-function generateLineChart(matchDataOverAll) {
+function generateLineChart() {
   //data preparation
   matchData = enrichMatchData(matchDataOverAll);
 
-  recycleSvgContainter();
+  recycleSvgContainter(chartList[0]);
 
   // Create a bounding box
   bounds = svg
