@@ -48,6 +48,7 @@ const chartList = [
 
 var xScale,
   yScale,
+  zScale,
   xAxisGenerator,
   yAxisGenerator,
   xAccessor,
@@ -92,7 +93,7 @@ async function showMainChart() {
 
   generateLineChart();
 
-  // generateBarChart("South Africa");
+  // generateStackedBarChart("South Africa");
 }
 
 /*
@@ -137,43 +138,43 @@ function showChart(chartIdx) {
       generateBubbleChart();
       break;
     case "svg-bar-chart-Australia":
-      generateBarChart("Australia");
+      generateStackedBarChart("Australia");
       break;
     case "svg-bar-chart-England":
-      generateBarChart("England");
+      generateStackedBarChart("England");
       break;
     case "svg-bar-chart-WestIndies":
-      generateBarChart("West Indies");
+      generateStackedBarChart("West Indies");
       break;
     case "svg-bar-chart-SouthAfrica":
-      generateBarChart("South Africa");
+      generateStackedBarChart("South Africa");
       break;
     case "svg-bar-chart-India":
-      generateBarChart("India");
+      generateStackedBarChart("India");
       break;
     case "svg-bar-chart-Pakistan":
-      generateBarChart("Pakistan");
+      generateStackedBarChart("Pakistan");
       break;
     case "svg-bar-chart-NewZealand":
-      generateBarChart("New Zealand");
+      generateStackedBarChart("New Zealand");
       break;
     case "svg-bar-chart-SriLanka":
-      generateBarChart("Sri Lanka");
+      generateStackedBarChart("Sri Lanka");
       break;
     case "svg-bar-chart-Bangladesh":
-      generateBarChart("Bangladesh");
+      generateStackedBarChart("Bangladesh");
       break;
     case "svg-bar-chart-Zimbabwe":
-      generateBarChart("Zimbabwe");
+      generateStackedBarChart("Zimbabwe");
       break;
     case "svg-bar-chart-Afghanistan":
-      generateBarChart("Afghanistan");
+      generateStackedBarChart("Afghanistan");
       break;
     case "svg-bar-chart-Ireland":
-      generateBarChart("Ireland");
+      generateStackedBarChart("Ireland");
       break;
     default:
-      generateLineChart(chartList[chartIdx]);
+      generateStackedBarChart(chartList[chartIdx]);
   }
 }
 
@@ -188,11 +189,10 @@ function recycleSvgContainter(svgClass) {
     .attr("height", dimensions.heigth);
 }
 
-function generateBarChart(teamName) {
+function generateStackedBarChart(teamName) {
   var data = teamResultData_fmt.filter((f) => f.team == teamName);
 
   var keys = ["Lost", "Won", "Undecided"];
-  const animationSpeed = 0;
 
   var dataList = data.map((d) => d.values)[0];
   var years = [...new Set(dataList.map((d) => d.Year))];
@@ -204,10 +204,44 @@ function generateBarChart(teamName) {
     Undecided: "orange",
   };
 
+  var resultList = [
+    ...new Set(
+      dataList.map((d) => ({
+        team: teamName,
+        year: d.Year,
+        result: keys[0],
+        totalMat: d.Mat,
+        mat: d[keys[0]],
+      }))
+    ),
+    ...new Set(
+      dataList.map((d) => ({
+        team: teamName,
+        year: d.Year,
+        result: keys[1],
+        totalMat: d.Mat,
+        mat: d[keys[1]],
+      }))
+    ),
+    ...new Set(
+      dataList.map((d) => ({
+        team: teamName,
+        year: d.Year,
+        result: keys[2],
+        totalMat: d.Mat,
+        mat: d[keys[2]],
+      }))
+    ),
+  ];
+
   recycleSvgContainter("svg-bar-chart-" + teamName.replace(/\s/g, ""));
 
   xScale = d3.scaleLinear().range([0, dimensions.boundedWidth]);
   yScale = d3.scaleLinear().range([dimensions.boundedHeight, 0]);
+  zScale = d3
+    .scaleOrdinal()
+    .range([colorScale[keys[0]], colorScale[keys[1]], colorScale[keys[2]]])
+    .domain(keys);
 
   yAccessor = (d) => d.Mat;
   xAccessor = (d) => d.Year;
@@ -215,13 +249,13 @@ function generateBarChart(teamName) {
   xAxisGenerator = d3.axisBottom().scale(xScale);
   yAxisGenerator = d3.axisLeft().scale(yScale);
 
-  var zScale = d3
-    .scaleOrdinal()
-    .range([colorScale[keys[0]], colorScale[keys[1]], colorScale[keys[2]]])
-    .domain(keys);
-
   setXYDomain(data);
   yScale.nice();
+
+  var barWidth =
+    (xScale(years[years.length - 1]) - xScale(years[0])) / noOfYears - 2;
+
+  barWidth = barWidth > 10 ? 10 : barWidth;
 
   // Create a bounding box
   bounds = svg
@@ -233,14 +267,15 @@ function generateBarChart(teamName) {
 
   generateAxis("Year", "#Matches");
 
-  var barWidth =
-    (xScale(years[years.length - 1]) - xScale(years[0])) / noOfYears - 2;
+  drawStackedBarChart(dataList, resultList, barWidth, keys);
+}
 
-  barWidth = barWidth > 10 ? 10 : barWidth;
+function drawStackedBarChart(data, resultList, barWidth, keys) {
+  const animationSpeed = 0;
 
   bounds
     .selectAll("g.layer")
-    .data(d3.stack().keys(keys)(dataList), (d) => d.key)
+    .data(d3.stack().keys(keys)(data), (d) => d.key)
     .enter()
     .append("g")
     .classed("layer", true)
@@ -263,8 +298,13 @@ function generateBarChart(teamName) {
     .attr("height", (d) => yScale(d[0]) - yScale(d[1]));
 
   bounds
+    .selectAll("rect")
+    .on("mouseover", (d, i) => handleMouseOverStackedBar(resultList[i]))
+    .on("mouseout", handleMouseOutStackedBar);
+
+  bounds
     .selectAll(".text")
-    .data(dataList)
+    .data(data)
     .enter()
     .append("text")
     .attr("class", "text")
@@ -400,7 +440,7 @@ function generateLineChart(dataPoint) {
   setXYDomain(matchData);
 
   // draw team based chart
-  drawLineChart(matchData, [handleMouseOver, handleMouseOut, handleMouseClick]);
+  drawLineChart(matchData);
 
   // Create X & Y Axis
   generateAxis("Year", dataPoint == "#Matches" ? dataPoint : "#Runs");
@@ -412,7 +452,7 @@ function generateLineChart(dataPoint) {
   generateAnnotations();
 }
 
-function drawLineChart(data, mouseHandlers) {
+function drawLineChart(data) {
   // console.log(data);
 
   const lines = bounds
@@ -427,9 +467,9 @@ function drawLineChart(data, mouseHandlers) {
     .attr("class", "chartLine")
     .attr("d", (d) => lineSelector(d.values))
     .attr("team-id", (d) => d.team)
-    .on("mouseover", mouseHandlers[0])
-    .on("mouseout", mouseHandlers[1])
-    .on("click", mouseHandlers[2]);
+    .on("mouseover", handleMouseOver)
+    .on("mouseout", handleMouseOut)
+    .on("click", handleMouseClick);
 
   const texts = bounds
     .selectAll("g")
@@ -455,9 +495,9 @@ function drawLineChart(data, mouseHandlers) {
     .attr("transform", "translate(10, 0)")
     .style("fill", (d) => d.Color)
     .text((d) => d.Team + " " + teamFlags[teamList.indexOf(d.Team)])
-    .on("mouseover", mouseHandlers[0])
-    .on("mouseout", mouseHandlers[1])
-    .on("click", mouseHandlers[2]);
+    .on("mouseover", handleMouseOver)
+    .on("mouseout", handleMouseOut)
+    .on("click", handleMouseClick);
 }
 
 function setXYDomain(data) {
@@ -559,6 +599,44 @@ function generateAnnotations() {
     .annotations(annotations);
 
   bounds.append("g").attr("class", "annotation-group").call(makeAnnotations);
+}
+
+function handleMouseOverStackedBar(d) {
+  document.getElementById("team-details").classList.remove("closed");
+  document.getElementById("td-team-name").innerHTML = d.team;
+  document.getElementById("td-test-status-year").innerHTML = "Year: " + d.year;
+
+  document.getElementById("td-team-matches").innerHTML =
+    d.totalMat.toLocaleString();
+
+  if (d.result == "Won") {
+    document.getElementById("td-team-won").innerHTML = d.mat.toLocaleString();
+  } else {
+    document.getElementById("row-won").style.display = "none";
+  }
+
+  if (d.result == "Lost") {
+    document.getElementById("td-team-lost").innerHTML = d.mat.toLocaleString();
+  } else {
+    document.getElementById("row-lost").style.display = "none";
+  }
+
+  if (d.result == "Undecided") {
+    document.getElementById("td-team-undecided").innerHTML =
+      d.mat.toLocaleString();
+  } else {
+    document.getElementById("row-undecided").style.display = "none";
+  }
+
+  document.getElementById("row-runs").style.display = "none";
+}
+
+function handleMouseOutStackedBar(d, i) {
+  handleMouseOut();
+  document.getElementById("row-won").style.display = "";
+  document.getElementById("row-lost").style.display = "";
+  document.getElementById("row-undecided").style.display = "";
+  document.getElementById("row-runs").style.display = "";
 }
 
 function handleMouseOver(d, i) {
