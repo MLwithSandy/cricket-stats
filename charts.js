@@ -28,32 +28,42 @@ const colors = [
   "orange",
 ];
 
-const chartList = ["svg-line-chart", "svg-bubble-chart"];
+const chartList = [
+  "svg-line-chart",
+  "svg-bubble-chart",
+  "svg-bar-chart-Australia",
+  "svg-bar-chart-England",
+  "svg-bar-chart-WestIndies",
+  "svg-bar-chart-SouthAfrica",
+  "svg-bar-chart-India",
+  "svg-bar-chart-Pakistan",
+  "svg-bar-chart-NewZealand",
+  "svg-bar-chart-SriLanka",
+  "svg-bar-chart-Bangladesh",
+  "svg-bar-chart-Zimbabwe",
+  "svg-bar-chart-Afghanistan",
+  "svg-bar-chart-Ireland",
+];
 // Define chart dimension
 
-var svg = d3.select("svg");
+var xScale,
+  yScale,
+  xAxisGenerator,
+  yAxisGenerator,
+  xAccessor,
+  yAccessor,
+  lineSelector,
+  bounds;
+var simulation;
+var teamData, matchData, teamList, matchDataOverAll, teamResultData;
+
 const chartContainer = "#main-page-chart-containter";
 const tooltips = document.querySelectorAll(".custom-tooltip");
 const cutOffYear = 2021;
 
+var svg = d3.select("svg");
 const dimensions = calculateDimension();
-
-const yAccessor = (d) => d.CumMats;
-const xAccessor = (d) => d.Year;
-const array_column = (array, column) => array.map((e) => e[column]);
-const xScale = d3.scaleLinear().range([0, dimensions.boundedWidth]);
-const yScale = d3.scaleLinear().range([dimensions.boundedHeight, 0]);
-const xAxisGenerator = d3.axisBottom().scale(xScale).ticks(13);
-const yAxisGenerator = d3.axisLeft().scale(yScale);
-
-var simulation;
-var teamData, matchData, teamList, matchDataOverAll;
-var bounds;
-
-const lineSelector = d3
-  .line()
-  .x((d) => xScale(xAccessor(d)))
-  .y((d) => yScale(yAccessor(d)));
+svg.attr("width", dimensions.width).attr("height", dimensions.heigth);
 
 window.onmousemove = (e) => {
   var x = e.clientX + 20 + "px",
@@ -64,41 +74,56 @@ window.onmousemove = (e) => {
   }
 };
 
-svg.attr("width", dimensions.width).attr("height", dimensions.heigth);
-
 async function showMainChart() {
   // read data
-  matchDataOverAll = await d3.csv("match_overall.csv", (d) =>
-    d.Team != "All" ? d : null
-  );
+
   teamData = await d3.csv("teams_overall.csv", (d) =>
     d.Team != "ICC World XI" ? d : null
   );
+
   teamList = teamData.map((d) => d.Team);
 
+  matchDataOverAll = await d3.csv("match_overall.csv", (d) =>
+    d.Team != "All" ? d : null
+  );
+
+  teamResultData = await d3.csv("teams.csv");
+  teamResultData_fmt = enrichTeamResultData(teamResultData);
+
   generateLineChart();
-
-  // generateBubbleChart();
-
-  // generateLineChart(matchDataOverAll);
 }
 
 /*
  Various functions
 */
 
+function firstChart() {
+  const chartClass = d3.select(chartContainer).select("svg").attr("class");
+  const chartIdx = chartList.indexOf(chartClass);
+
+  if (chartIdx > 0) generateLineChart();
+}
+
 function prevChart() {
   const chartClass = d3.select(chartContainer).select("svg").attr("class");
   const chartIdx = chartList.indexOf(chartClass);
 
-  showChart(chartIdx > 0 ? chartIdx - 1 : chartIdx);
+  if (chartIdx > 0) showChart(chartIdx > 0 ? chartIdx - 1 : chartIdx);
 }
 
 function nextChart() {
   const chartClass = d3.select(chartContainer).select("svg").attr("class");
   const chartIdx = chartList.indexOf(chartClass);
 
-  showChart(chartIdx < chartList.length - 1 ? chartIdx + 1 : chartIdx);
+  if (chartIdx < chartList.length - 1)
+    showChart(chartIdx < chartList.length - 1 ? chartIdx + 1 : chartIdx);
+}
+
+function lastChart() {
+  const chartClass = d3.select(chartContainer).select("svg").attr("class");
+  const chartIdx = chartList.indexOf(chartClass);
+
+  if (chartIdx < chartList.length - 1) showChart(chartList.length - 1);
 }
 
 function showChart(chartIdx) {
@@ -109,8 +134,44 @@ function showChart(chartIdx) {
     case "svg-bubble-chart":
       generateBubbleChart();
       break;
+    case "svg-bar-chart-Australia":
+      generateBarChart("Australia");
+      break;
+    case "svg-bar-chart-England":
+      generateBarChart("England");
+      break;
+    case "svg-bar-chart-WestIndies":
+      generateBarChart("West Indies");
+      break;
+    case "svg-bar-chart-SouthAfrica":
+      generateBarChart("South Africa");
+      break;
+    case "svg-bar-chart-India":
+      generateBarChart("India");
+      break;
+    case "svg-bar-chart-Pakistan":
+      generateBarChart("Pakistan");
+      break;
+    case "svg-bar-chart-NewZealand":
+      generateBarChart("New Zealand");
+      break;
+    case "svg-bar-chart-SriLanka":
+      generateBarChart("Sri Lanka");
+      break;
+    case "svg-bar-chart-Bangladesh":
+      generateBarChart("Bangladesh");
+      break;
+    case "svg-bar-chart-Zimbabwe":
+      generateBarChart("Zimbabwe");
+      break;
+    case "svg-bar-chart-Afghanistan":
+      generateBarChart("Afghanistan");
+      break;
+    case "svg-bar-chart-Ireland":
+      generateBarChart("Ireland");
+      break;
     default:
-      generateLineChart();
+      generateLineChart(chartList[chartIdx]);
   }
 }
 
@@ -123,6 +184,116 @@ function recycleSvgContainter(svgClass) {
     .attr("class", svgClass)
     .attr("width", dimensions.width)
     .attr("height", dimensions.heigth);
+}
+
+function generateBarChart(teamName) {
+  var data = teamResultData_fmt.filter((f) => f.team == teamName);
+
+  var keys = ["Lost", "Won", "Undecided"];
+  var dataList = data.map((d) => d.values)[0];
+  var years = [...new Set(dataList.map((d) => d.Year))];
+
+  var colorScale = {
+    Won: "green",
+    Lost: "red",
+    Undecided: "orange",
+  };
+
+  console.log();
+
+  recycleSvgContainter("svg-bar-chart-" + teamName.replace(/\s/g, ""));
+
+  xScale = d3.scaleLinear().range([0, dimensions.boundedWidth]);
+  yScale = d3.scaleLinear().range([dimensions.boundedHeight, 0]);
+
+  yAccessor = (d) => d.Mat;
+  xAccessor = (d) => d.Year;
+
+  xAxisGenerator = d3.axisBottom().scale(xScale);
+  yAxisGenerator = d3.axisLeft().scale(yScale);
+
+  var z = d3
+    .scaleOrdinal()
+    .range([colorScale[keys[0]], colorScale[keys[1]], colorScale[keys[2]]])
+    .domain(keys);
+
+  setXYDomain(data);
+  yScale.nice();
+
+  // Create a bounding box
+  bounds = svg
+    .append("g")
+    .style(
+      "transform",
+      `translate(${dimensions.margin.left}px,${dimensions.margin.top}px)`
+    );
+  // bounds
+  //   .selectAll(".y-axis")
+  //   .transition()
+  //   .duration(0)
+  //   .call(yAxisGenerator.ticks(null, "s"));
+
+  // bounds
+  //   .selectAll(".x-axis")
+  //   .transition()
+  //   .duration(0)
+  //   .call(xAxisGenerator.tickSizeOuter(0));
+
+  generateAxis("Year", "#Matches");
+
+  var barWidth =
+    (xScale(years[years.length - 1]) - xScale(years[0])) / years.length - 2;
+
+  barWidth = barWidth > 10 ? 10 : barWidth;
+
+  var group = bounds
+    .selectAll("g.layer")
+    .data(d3.stack().keys(keys)(dataList), (d) => d.key);
+
+  group.exit().remove();
+
+  group
+    .enter()
+    .append("g")
+    .classed("layer", true)
+    .attr("fill", (d) => z(d.key));
+
+  var bars = bounds
+    .selectAll("g.layer")
+    .selectAll("rect")
+    .data(
+      (d) => d,
+      (e) => e.data.Year
+    );
+
+  bars.exit().remove();
+
+  bars
+    .enter()
+    .append("rect")
+    .attr("width", (d) => barWidth)
+    .merge(bars)
+    .transition()
+    .duration(3000)
+    .attr("x", (d) => xScale(d.data.Year))
+    .attr("y", (d) => yScale(d[1]))
+    .attr("height", (d) => yScale(d[0]) - yScale(d[1]));
+
+  var text = bounds.selectAll(".text").data(dataList, (d) => d.Year);
+
+  text.exit().remove();
+  text
+    .enter()
+    .append("text")
+    .attr("class", "text")
+    .attr("text-anchor", "middle")
+    .attr("font-size", 8)
+    .merge(text)
+    .transition()
+    .duration(5000)
+    .attr("x", (d) => xScale(d.Year) + 5 / 2)
+    .attr("y", (d) => yScale(d.Mat) - 5)
+    .text((d) => d.Mat);
 }
 
 function generateBubbleChart() {
@@ -164,7 +335,11 @@ function drawBubbleChart(nodes) {
   const bubbles = elements
     .append("circle")
     .classed("bubble", true)
-    .attr("r", (d) => d.radius)
+    // .attr("r", (d) => d.radius)
+    .attr("r", (d) => {
+      // console.log("start", d);
+      return d.radius;
+    })
     .attr("team-id", (d) => d.Team)
     .attr("fill", (d) => d.Color)
     .attr("stroke", (d) => d.Color)
@@ -214,11 +389,23 @@ function generateBubbleNodes(data) {
   return bubbleChartNodes;
 }
 
-function generateLineChart() {
+function generateLineChart(dataPoint) {
   //data preparation
   matchData = enrichMatchData(matchDataOverAll);
 
   recycleSvgContainter(chartList[0]);
+
+  yAccessor = (d) => (dataPoint == "#Matches" ? d.CumMats : d.CumRuns);
+  xAccessor = (d) => d.Year;
+  xScale = d3.scaleLinear().range([0, dimensions.boundedWidth]);
+  yScale = d3.scaleLinear().range([dimensions.boundedHeight, 0]);
+  xAxisGenerator = d3.axisBottom().scale(xScale).ticks(13);
+  yAxisGenerator = d3.axisLeft().scale(yScale);
+
+  lineSelector = d3
+    .line()
+    .x((d) => xScale(xAccessor(d)))
+    .y((d) => yScale(yAccessor(d)));
 
   // Create a bounding box
   bounds = svg
@@ -235,7 +422,7 @@ function generateLineChart() {
   drawLineChart(matchData, [handleMouseOver, handleMouseOut, handleMouseClick]);
 
   // Create X & Y Axis
-  generateAxis(xScale, yScale, "Year", "#Matches");
+  generateAxis("Year", dataPoint == "#Matches" ? dataPoint : "#Runs");
 
   // Create Gridlines
   generateGridLines();
@@ -294,34 +481,17 @@ function drawLineChart(data, mouseHandlers) {
 
 function setXYDomain(data) {
   yScale.domain([
-    d3.min(data, function (c) {
-      return d3.min(c.values, function (d) {
-        return d.CumMats;
-      });
-    }),
-    d3.max(data, function (c) {
-      return d3.max(c.values, function (d) {
-        return d.CumMats;
-      });
-    }),
+    d3.min(data, (c) => d3.min(c.values, yAccessor)),
+    d3.max(data, (c) => d3.max(c.values, yAccessor)),
   ]);
 
   xScale.domain([
-    d3.min(data, function (c) {
-      return d3.min(c.values, function (d) {
-        return d.Year;
-      });
-    }),
-
-    d3.max(data, function (c) {
-      return d3.max(c.values, function (d) {
-        return d.Year;
-      });
-    }),
+    d3.min(data, (c) => d3.min(c.values, xAccessor)),
+    d3.max(data, (c) => d3.max(c.values, xAccessor)),
   ]);
 }
 
-function generateAxis(xScale, yScale, xAxisLabel, yAxisLabel) {
+function generateAxis(xAxisLabel, yAxisLabel) {
   // Create X & Y Axis
   const yAxis = bounds
     .append("g")
@@ -345,7 +515,7 @@ function generateAxis(xScale, yScale, xAxisLabel, yAxisLabel) {
     .attr("transform", (d, i) => {
       return (
         "translate( " +
-        -(dimensions.boundedWidth / 2 - 30) +
+        -(dimensions.boundedWidth / 2 - 15) +
         " , " +
         (dimensions.boundedHeight / 2 - 50) +
         ")," +
@@ -454,13 +624,8 @@ function handleMouseOut(d, i) {
 }
 
 function handleMouseClick(d, i) {
-  console.log("click: ", d, i);
-  // let split_path = window.location.pathname.split("/");
-  // let redirectPath = split_path.slice(0, split_path.length - 1);
-  // redirectPath.push("constructor_drivers.html");
-  // let basePath =
-  //   redirectPath.join("/") + `?c=${this.getAttribute("constructor-id")}`;
-  // window.location = basePath;
+  const idx = teamList.indexOf(d.team || d.Team);
+  showChart(idx + 2);
 }
 
 // Create Event Handlers for mouse
@@ -487,10 +652,7 @@ function handleMouseOutBubble(d, i) {
 }
 
 function handleMouseClickBubble(d, i) {
-  // selectedConstructor = constructor_arr.find((c) => c.id == d.id);
-  // // console.log("selected constructor", selectedConstructor);
-  // document.getElementById("page-1").classList.toggle("closed");
-  handleMouseClick();
+  handleMouseClick(d, i);
 }
 
 function enrichMatchData(data) {
@@ -520,6 +682,30 @@ function enrichMatchData(data) {
         Year: Number(t.Year),
         CumMats: Number(t.CumMats),
         CumRuns: Number(t.CumRuns),
+        Color: colors[i],
+      })),
+      color: colors[i],
+    });
+  });
+
+  return teamMatchData;
+}
+
+function enrichTeamResultData(data) {
+  var teamMatchData = [];
+  teamList.forEach((d, i) => {
+    let td = data.filter((t) => t["Team"] == d);
+
+    teamMatchData.push({
+      team: d,
+      values: td.map((t) => ({
+        Team: d,
+        Year: Number(t.Year),
+        Mat: Number(t.Mat),
+        Won: Number(t.Won),
+        Lost: Number(t.Lost),
+        Undecided: Number(t.Undecided),
+        Flag: teamFlags[i],
         Color: colors[i],
       })),
       color: colors[i],
