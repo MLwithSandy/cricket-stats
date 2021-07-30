@@ -91,6 +91,8 @@ async function showMainChart() {
   teamResultData_fmt = enrichTeamResultData(teamResultData);
 
   generateLineChart();
+
+  // generateBarChart("South Africa");
 }
 
 /*
@@ -190,16 +192,17 @@ function generateBarChart(teamName) {
   var data = teamResultData_fmt.filter((f) => f.team == teamName);
 
   var keys = ["Lost", "Won", "Undecided"];
+  const animationSpeed = 0;
+
   var dataList = data.map((d) => d.values)[0];
   var years = [...new Set(dataList.map((d) => d.Year))];
+  var noOfYears = years[years.length - 1] - years[0] + 1;
 
   var colorScale = {
     Won: "green",
     Lost: "red",
     Undecided: "orange",
   };
-
-  console.log();
 
   recycleSvgContainter("svg-bar-chart-" + teamName.replace(/\s/g, ""));
 
@@ -212,7 +215,7 @@ function generateBarChart(teamName) {
   xAxisGenerator = d3.axisBottom().scale(xScale);
   yAxisGenerator = d3.axisLeft().scale(yScale);
 
-  var z = d3
+  var zScale = d3
     .scaleOrdinal()
     .range([colorScale[keys[0]], colorScale[keys[1]], colorScale[keys[2]]])
     .domain(keys);
@@ -227,70 +230,48 @@ function generateBarChart(teamName) {
       "transform",
       `translate(${dimensions.margin.left}px,${dimensions.margin.top}px)`
     );
-  // bounds
-  //   .selectAll(".y-axis")
-  //   .transition()
-  //   .duration(0)
-  //   .call(yAxisGenerator.ticks(null, "s"));
-
-  // bounds
-  //   .selectAll(".x-axis")
-  //   .transition()
-  //   .duration(0)
-  //   .call(xAxisGenerator.tickSizeOuter(0));
 
   generateAxis("Year", "#Matches");
 
   var barWidth =
-    (xScale(years[years.length - 1]) - xScale(years[0])) / years.length - 2;
+    (xScale(years[years.length - 1]) - xScale(years[0])) / noOfYears - 2;
 
   barWidth = barWidth > 10 ? 10 : barWidth;
 
-  var group = bounds
+  bounds
     .selectAll("g.layer")
-    .data(d3.stack().keys(keys)(dataList), (d) => d.key);
-
-  group.exit().remove();
-
-  group
+    .data(d3.stack().keys(keys)(dataList), (d) => d.key)
     .enter()
     .append("g")
     .classed("layer", true)
-    .attr("fill", (d) => z(d.key));
+    .attr("fill", (d) => zScale(d.key));
 
-  var bars = bounds
+  bounds
     .selectAll("g.layer")
     .selectAll("rect")
     .data(
       (d) => d,
       (e) => e.data.Year
-    );
-
-  bars.exit().remove();
-
-  bars
+    )
     .enter()
     .append("rect")
     .attr("width", (d) => barWidth)
-    .merge(bars)
     .transition()
-    .duration(3000)
+    .duration(animationSpeed)
     .attr("x", (d) => xScale(d.data.Year))
     .attr("y", (d) => yScale(d[1]))
     .attr("height", (d) => yScale(d[0]) - yScale(d[1]));
 
-  var text = bounds.selectAll(".text").data(dataList, (d) => d.Year);
-
-  text.exit().remove();
-  text
+  bounds
+    .selectAll(".text")
+    .data(dataList)
     .enter()
     .append("text")
     .attr("class", "text")
     .attr("text-anchor", "middle")
     .attr("font-size", 8)
-    .merge(text)
     .transition()
-    .duration(5000)
+    .duration(animationSpeed)
     .attr("x", (d) => xScale(d.Year) + 5 / 2)
     .attr("y", (d) => yScale(d.Mat) - 5)
     .text((d) => d.Mat);
@@ -481,7 +462,8 @@ function drawLineChart(data, mouseHandlers) {
 
 function setXYDomain(data) {
   yScale.domain([
-    d3.min(data, (c) => d3.min(c.values, yAccessor)),
+    // d3.min(data, (c) => d3.min(c.values, yAccessor)),
+    0,
     d3.max(data, (c) => d3.max(c.values, yAccessor)),
   ]);
 
