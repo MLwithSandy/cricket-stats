@@ -320,6 +320,17 @@ function drawStackedBarChart(data, resultList, barWidth, keys) {
     .attr("x", (d) => xScale(d.Year) + 5 / 2)
     .attr("y", (d) => yScale(d.Mat) - 5)
     .text((d) => d.Mat);
+
+  bounds
+    .data(data)
+    .append("text")
+    .attr("x", dimensions.boundedWidth / 2)
+    .attr("y", -20)
+    .attr("text-anchor", "middle")
+    .attr("fill", (d) => d.Color)
+    .style("font-size", "16px")
+    .style("font-weight", "bold")
+    .text((d) => d.Team + " " + d.Flag);
 }
 
 function createLegend() {
@@ -428,12 +439,16 @@ function drawBubbleChart(nodes) {
 
   const label2 = elements
     .append("text")
+    .classed("bubble-label", true)
     .style("fill", (d) => (d.Color == "#fabed4" ? "black" : "white"))
     .attr("font-size", "12")
     .attr("font-weight", "bold")
     .attr("dy", "1.5em")
     .attr("dx", "-1em")
-    .text((d) => (d.Mat > 45 ? d.Mat : ""));
+    .text((d) => (d.Mat > 45 ? d.Mat : ""))
+    .on("mouseover", handleMouseOverBubble)
+    .on("mouseout", handleMouseOutBubble)
+    .on("click", handleMouseClick);
 
   simulation
     .nodes(nodes)
