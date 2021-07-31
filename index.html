@@ -1,66 +1,86 @@
 <html>
   <body onload="showMainChart()">
-    <h1>Test Cricket History (1877 - 2021)</h1>
+    <h1 class="header">Test Cricket Journey 1877 - 2021</h1>
     <div id="main-page" class="main-page">
       <div id="main-page-desc" class="main-page-desc">
-        <h3>Test Cricket</h3>
-      </div>
-      <div id="nav-row">
-        <a id="prev-btn" class="previous round" onclick="firstChart()"
-          >&#8249;&#8249;</a
-        >
-        <a id="prev-btn" class="previous round" onclick="prevChart()"
-          >&#8249;</a
-        >
-        <a id="next-btn" class="next round" onclick="nextChart()">&#8250;</a>
-        <a id="next-btn" class="next round" onclick="lastChart()"
-          >&#8250;&#8250;</a
-        >
-      </div>
-      <div id="main-page-chart-containter" class="float-container">
-        <div id="main-page-chart"></div>
-        <svg width="800" height="600"></svg>
-        <div id="team-details" class="custom-tooltip closed">
-          <div id="custom-tooltip-header" class="custom-tooltip-header">
-            <div id="td-team-name"></div>
-            <div id="td-test-status-year" class="custom-tooltip-text"></div>
-          </div>
-          <table>
-            <tr id="row-matches">
-              <td class="col-header col-matches">#Matches</td>
-              <td
-                id="td-team-matches"
-                class="col-data col-data-right col-matches"
-              ></td>
-            </tr>
-            <tr id="row-won">
-              <td class="col-header col-won">#Won</td>
-              <td id="td-team-won" class="col-data col-data-right col-won"></td>
-            </tr>
-            <tr id="row-lost">
-              <td class="col-header col-lost">#Lost</td>
-              <td
-                id="td-team-lost"
-                class="col-data col-data-right col-lost"
-              ></td>
-            </tr>
-            <tr id="row-undecided">
-              <td class="col-header col-undecided">#Undecided</td>
-              <td
-                id="td-team-undecided"
-                class="col-data col-data-right col-undecided"
-              ></td>
-            </tr>
-            <tr id="row-runs" class="row-runs">
-              <td class="col-header col-runs">#Runs</td>
-              <td
-                id="td-team-runs"
-                class="col-data col-data-right col-runs"
-              ></td>
-            </tr>
-          </table>
+        <div id="main-page-sub-header" class="page-sub-header">
+          Total Runs scored since 1877
         </div>
       </div>
+      <div id="data-area" class="data-area">
+        <div id="text-description" class="text-description">
+          <p>test ijsdlkfjskj iedsjhfksadjf jksdhfkjsdujf jdshfkjsj</p>
+        </div>
+        <div id="chart-data" class="chart-data">
+          <div id="main-page-chart-containter" class="float-container">
+            <div id="main-page-chart"></div>
+            <svg width="1024" height="500"></svg>
+            <div id="team-details" class="custom-tooltip closed">
+              <div id="custom-tooltip-header" class="custom-tooltip-header">
+                <div id="td-team-name"></div>
+                <div id="td-test-status-year" class="custom-tooltip-text"></div>
+              </div>
+              <table>
+                <tr id="row-matches">
+                  <td class="col-header col-matches">#Matches</td>
+                  <td
+                    id="td-team-matches"
+                    class="col-data col-data-right col-matches"
+                  ></td>
+                </tr>
+                <tr id="row-won">
+                  <td class="col-header col-won">#Won</td>
+                  <td
+                    id="td-team-won"
+                    class="col-data col-data-right col-won"
+                  ></td>
+                </tr>
+                <tr id="row-lost">
+                  <td class="col-header col-lost">#Lost</td>
+                  <td
+                    id="td-team-lost"
+                    class="col-data col-data-right col-lost"
+                  ></td>
+                </tr>
+                <tr id="row-undecided">
+                  <td class="col-header col-undecided">#Undecided</td>
+                  <td
+                    id="td-team-undecided"
+                    class="col-data col-data-right col-undecided"
+                  ></td>
+                </tr>
+                <tr id="row-runs" class="row-runs">
+                  <td class="col-header col-runs">#Runs</td>
+                  <td
+                    id="td-team-runs"
+                    class="col-data col-data-right col-runs"
+                  ></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div id="nav-row" class="nav-row nav nav2">
+            <a id="first-btn" class="first round" onclick="firstChart()"
+              >&#8249;&#8249;</a
+            >
+            <a id="prev-btn" class="previous round" onclick="prevChart()"
+              >&#8249;</a
+            >
+            <a id="next-btn" class="next round" onclick="nextChart()"
+              >&#8250;</a
+            >
+            <a id="last-btn" class="last round" onclick="lastChart()"
+              >&#8250;&#8250;</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      <p>
+        @Sandeep Kumar, CS-416 Data Visualization, University of Illinois,
+        Urbana-Champagne
+      </p>
     </div>
   </body>
   <link rel="stylesheet" href="styles.css" />

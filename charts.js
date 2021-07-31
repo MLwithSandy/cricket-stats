@@ -1,7 +1,7 @@
 const teamFlags = [
   "🇦🇺",
   "🇬🇧",
-  "",
+  "🇦🇬",
   "🇿🇦",
   "🇮🇳",
   "🇵🇰",
@@ -14,18 +14,18 @@ const teamFlags = [
 ];
 
 const colors = [
-  "gold",
-  "blue",
-  "green",
-  "yellow",
-  "black",
-  "grey",
-  "darkgreen",
-  "pink",
-  "brown",
-  "slateblue",
-  "grey1",
-  "orange",
+  "#000075", //Australia - Navy
+  "#469990", //England - Teal
+  "#f032e6", //West Indies - Magenta
+  "#fabed4", //South Africa - Pink
+  "#4363d8", //India - Blue
+  "#3cb44b", //Pakistan - Green
+  "#000000", //New Zealand - Black
+  "#911eb4", //Sri Lanka - Purple
+  "#808000", //Bangladesh - Olive
+  "#9A6324", //Zimbabwe - Brown
+  "#800000", //Afghanistan - Maroon
+  "#f58231", //Ireland - Orange
 ];
 
 const chartList = [
@@ -54,6 +54,7 @@ var xScale,
   xAccessor,
   yAccessor,
   lineSelector,
+  center,
   bounds;
 var simulation;
 var teamData, matchData, teamList, matchDataOverAll, teamResultData;
@@ -99,7 +100,6 @@ async function showMainChart() {
 /*
  Various functions
 */
-
 function firstChart() {
   const chartClass = d3.select(chartContainer).select("svg").attr("class");
   const chartIdx = chartList.indexOf(chartClass);
@@ -190,6 +190,9 @@ function recycleSvgContainter(svgClass) {
 }
 
 function generateStackedBarChart(teamName) {
+  document.getElementById("main-page-sub-header").innerHTML =
+    "Overview of match results, by team";
+
   var data = teamResultData_fmt.filter((f) => f.team == teamName);
 
   var keys = ["Lost", "Won", "Undecided"];
@@ -268,6 +271,8 @@ function generateStackedBarChart(teamName) {
   generateAxis("Year", "#Matches");
 
   drawStackedBarChart(dataList, resultList, barWidth, keys);
+
+  createLegend();
 }
 
 function drawStackedBarChart(data, resultList, barWidth, keys) {
@@ -317,18 +322,59 @@ function drawStackedBarChart(data, resultList, barWidth, keys) {
     .text((d) => d.Mat);
 }
 
+function createLegend() {
+  const legendWidth = 25;
+  const legendHeight = 10;
+
+  const legend = bounds
+    .selectAll(".legend")
+    .data(zScale.domain())
+    .enter()
+    .append("g")
+    .attr("class", "legend")
+    .attr("transform", function (d, i) {
+      return (
+        "translate(" +
+        (dimensions.boundedWidth - 50 - i * 120) +
+        "," +
+        (dimensions.boundedHeight + 40) +
+        ")"
+      );
+    });
+
+  legend
+    .append("rect")
+    .attr("width", legendWidth)
+    .attr("height", legendHeight)
+    .style("fill", zScale)
+    .style("stroke", zScale);
+
+  legend
+    .append("text")
+    .attr("class", "legend-text")
+    .attr("font-size", 12)
+    .attr("x", legendWidth + 5)
+    .attr("y", legendHeight)
+    .text(function (d) {
+      return d;
+    });
+}
+
 function generateBubbleChart() {
+  document.getElementById("main-page-sub-header").innerHTML =
+    "Total matches played since 1877, by teams";
+
   const formattedTeamData = enrichTeamData(teamData);
   const nodes = generateBubbleNodes(formattedTeamData);
-  const center = { x: dimensions.width / 2, y: dimensions.heigth / 2 };
+  center = { x: dimensions.width / 2, y: dimensions.heigth / 2 };
 
-  const forceStrength = 0.04;
+  const forceStrength = 0.01;
 
   simulation = d3
     .forceSimulation()
     .force(
       "charge",
-      d3.forceManyBody().strength((d) => Math.pow(d.radius, 2.0) * 0.04)
+      d3.forceManyBody().strength((d) => Math.pow(d.radius, 2.0) * 0.03)
     )
     .force("x", d3.forceX().strength(forceStrength).x(center.x))
     .force("y", d3.forceY().strength(forceStrength).y(center.y))
@@ -339,7 +385,7 @@ function generateBubbleChart() {
       "collision",
       d3.forceCollide().radius((d) => d.radius * 1.25)
     );
-  }, 800);
+  }, 1000);
 
   recycleSvgContainter(chartList[1]);
 
@@ -356,11 +402,7 @@ function drawBubbleChart(nodes) {
   const bubbles = elements
     .append("circle")
     .classed("bubble", true)
-    // .attr("r", (d) => d.radius)
-    .attr("r", (d) => {
-      // console.log("start", d);
-      return d.radius;
-    })
+    .attr("r", (d) => d.radius)
     .attr("team-id", (d) => d.Team)
     .attr("fill", (d) => d.Color)
     .attr("stroke", (d) => d.Color)
@@ -374,7 +416,7 @@ function drawBubbleChart(nodes) {
     .append("text")
     .attr("team-id", (d) => d.Team)
     .classed("bubble-label", true)
-    .attr("dy", ".3em")
+    .attr("dy", "0.1em")
     .attr("id", (d) => "bubble-label-" + d.Team)
     .style("text-anchor", "middle")
     .style("font-size", 20)
@@ -384,13 +426,55 @@ function drawBubbleChart(nodes) {
     .on("mouseout", handleMouseOutBubble)
     .on("click", handleMouseClick);
 
+  const label2 = elements
+    .append("text")
+    .style("fill", (d) => (d.Color == "#fabed4" ? "black" : "white"))
+    .attr("font-size", "12")
+    .attr("font-weight", "bold")
+    .attr("dy", "1.5em")
+    .attr("dx", "-1em")
+    .text((d) => (d.Mat > 45 ? d.Mat : ""));
+
   simulation
     .nodes(nodes)
     .on("tick", () => {
       bubbles.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
       labels.attr("x", (d) => d.x).attr("y", (d) => d.y);
+      label2.attr("x", (d) => d.x).attr("y", (d) => d.y);
     })
     .restart();
+
+  const legend = elements
+    .selectAll(".legend")
+    .data(nodes, (d) => d.Team)
+    .enter()
+    .append("g")
+    .attr("class", "legend")
+    .attr("transform", function (d, i) {
+      return (
+        "translate(" +
+        5 +
+        "," +
+        (dimensions.boundedHeight / 2 + 50 + i * 20) +
+        ")"
+      );
+    });
+
+  const legendWidth = 25;
+  const legendHeight = 10;
+  legend
+    .append("rect")
+    .attr("width", legendWidth)
+    .attr("height", legendHeight)
+    .style("fill", (d) => d.Color);
+
+  legend
+    .append("text")
+    .attr("class", "legend-text")
+    .attr("font-size", 12)
+    .attr("x", legendWidth + 5)
+    .attr("y", legendHeight)
+    .text((d) => d.Team);
 }
 
 function generateBubbleNodes(data) {
@@ -399,7 +483,7 @@ function generateBubbleNodes(data) {
   const radiusScale = d3
     .scaleSqrt()
     .domain([0, maxSize])
-    .range([0, dimensions.heigth / 9]);
+    .range([0, dimensions.heigth / 7]);
 
   const bubbleChartNodes = data.map((d) => ({
     ...d,
@@ -412,6 +496,10 @@ function generateBubbleNodes(data) {
 
 function generateLineChart(dataPoint) {
   //data preparation
+
+  document.getElementById("main-page-sub-header").innerHTML =
+    "Total runs scored since 1877, by teams";
+
   matchData = enrichMatchData(matchDataOverAll);
 
   recycleSvgContainter(chartList[0]);
@@ -471,6 +559,7 @@ function drawLineChart(data) {
     .on("mouseout", handleMouseOut)
     .on("click", handleMouseClick);
 
+  var labelsY = [];
   const texts = bounds
     .selectAll("g")
     .attr("font-family", "sans-serif")
@@ -491,7 +580,17 @@ function drawLineChart(data) {
     .attr("x", (d) =>
       xScale(xAccessor(d) < cutOffYear ? cutOffYear : xAccessor(d))
     )
-    .attr("y", (d) => yScale(yAccessor(d)))
+    .attr("y", (d) => {
+      let y = yScale(yAccessor(d));
+
+      for (let ii = 0; ii < labelsY.length; ii++) {
+        if (Math.abs(labelsY[ii] - y) < 12) {
+          y = y + 12;
+        }
+      }
+      labelsY.push(y);
+      return y;
+    })
     .attr("transform", "translate(10, 0)")
     .style("fill", (d) => d.Color)
     .text((d) => d.Team + " " + teamFlags[teamList.indexOf(d.Team)])
@@ -530,24 +629,26 @@ function generateAxis(xAxisLabel, yAxisLabel) {
 
   yAxis
     .append("text")
-    .attr("x", -40)
-    .attr("y", dimensions.boundedHeight / 2)
-    .attr("fill", "currentColor")
+    .attr("class", "axis-label")
+    .attr("fill", "black")
     .attr("text-anchor", "end")
     .attr("transform", (d, i) => {
       return (
         "translate( " +
-        -(dimensions.boundedWidth / 2 - 15) +
+        -(dimensions.margin.left - 30) +
         " , " +
-        (dimensions.boundedHeight / 2 - 50) +
+        (dimensions.boundedHeight / 2 - 10) +
         ")," +
         "rotate(-90)"
       );
+
+      // return "translate( " + 0 + " , " + 0 + ")," + "rotate(-90)";
     })
     .text(yAxisLabel);
 
   xAxis
     .append("text")
+    .attr("class", "axis-label")
     .attr("x", dimensions.boundedWidth / 2)
     .attr("y", dimensions.margin.bottom - 10)
     .attr("fill", "currentColor")
@@ -576,8 +677,8 @@ function generateAnnotations() {
           "The anti-apartheid movement led the ICC to impose a moratorium on South Africa 🇿🇦 tours.",
         title: "The international ban 1970 - 1990",
       },
-      x: 435,
-      y: 418,
+      x: xScale(1970),
+      y: yScale(159598),
       dy: -80,
       dx: -100,
     },
@@ -586,10 +687,20 @@ function generateAnnotations() {
         label: "Two test playing nations: England 🇬🇧 & Australia 🇦🇺",
         title: "1887",
       },
-      x: 5,
-      y: 500,
+      x: xScale(1877),
+      y: yScale(0),
       dy: -80,
       dx: +30,
+    },
+    {
+      note: {
+        label: "Last team to be granted Test playing status in 2018",
+        title: "Ireland 🇮🇪",
+      },
+      x: xScale(2018),
+      y: yScale(0),
+      dy: -150,
+      dx: -100,
     },
   ];
 
@@ -802,7 +913,7 @@ function calculateDimension() {
     heigth: svg.attr("height"),
     margin: {
       top: 50,
-      right: 80,
+      right: 100,
       bottom: 50,
       left: 80,
     },
