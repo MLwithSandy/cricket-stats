@@ -95,7 +95,7 @@ async function showMainChart() {
   generateLineChart();
   // generateBubbleChart();
 
-  generateStackedBarChart("India");
+  // generateStackedBarChart("Bangladesh");
 }
 
 /*
@@ -198,6 +198,8 @@ function generateStackedBarChart(teamName) {
     '<object type="text/html" data="team-' +
     teamName.replace(/\s/g, "").toLowerCase() +
     '.html" style="width:100%; height: 100%;" ></object>';
+  document.getElementById("tips-txt").innerHTML =
+    "Hover over the bar chart to see match stats in that year;";
 
   var data = teamResultData_fmt.filter((f) => f.team == teamName);
 
@@ -255,8 +257,11 @@ function generateStackedBarChart(teamName) {
   yAccessor = (d) => d.Mat;
   xAccessor = (d) => d.Year;
 
-  xAxisGenerator = d3.axisBottom().scale(xScale);
-  yAxisGenerator = d3.axisLeft().scale(yScale);
+  const ticks = calculateTicks(years[0], noOfYears);
+
+  const maxMatches = d3.max(dataList, (d) => d.Mat);
+  xAxisGenerator = d3.axisBottom().scale(xScale).ticks(ticks);
+  yAxisGenerator = d3.axisLeft().scale(yScale).ticks(maxMatches);
 
   setXYDomain(data);
   yScale.nice();
@@ -274,13 +279,24 @@ function generateStackedBarChart(teamName) {
       `translate(${dimensions.margin.left}px,${dimensions.margin.top}px)`
     );
 
-  generateAxis("Year", "#Matches");
+  generateAxis("Year", "#Matches", barWidth);
 
   drawStackedBarChart(dataList, resultList, barWidth, keys);
 
   createLegend();
 
   generateAnnotationsStackedBarChart(teamName);
+}
+
+function calculateTicks(startYear, noOfYears) {
+  var ticks = startYear < 1900 ? 13 : 10;
+  ticks = (startYear >= 1900) & (startYear < 1950) ? 11 : ticks;
+  ticks = (startYear >= 1950) & (startYear < 1980) ? 9 : ticks;
+  ticks = (startYear >= 1980) & (startYear < 2000) ? 7 : ticks;
+  ticks = (startYear >= 2000) & (startYear < 2015) ? 5 : ticks;
+  ticks =
+    (startYear >= 2015) & (startYear < cutOffYear) ? noOfYears - 1 : ticks;
+  return ticks;
 }
 
 function drawStackedBarChart(data, resultList, barWidth, keys) {
@@ -450,6 +466,46 @@ function generateAnnotationsStackedBarChart(teamName) {
     });
   }
 
+  if (teamName == "Ireland") {
+    annotations.push({
+      note: {
+        label: "Ireland first match after Test status",
+        title: "Test Status",
+      },
+      x: xScale(2018),
+      y: yScale(1),
+      dy: -100,
+      dx: +40,
+    });
+  }
+
+  if (teamName == "Zimbabwe") {
+    annotations.push({
+      note: {
+        label:
+          "Worsening political situation, steep decline and the exodus of players",
+        title: "2005–2009",
+      },
+      x: xScale(2006),
+      y: yScale(0),
+      dy: -200,
+      dx: +40,
+    });
+  }
+
+  if (teamName == "Pakistan") {
+    annotations.push({
+      note: {
+        label: "No test match hosted in Pakistan",
+        title: "2009–2019",
+      },
+      x: xScale(2009.5),
+      y: yScale(9),
+      dy: -80,
+      dx: +30,
+    });
+  }
+
   const makeAnnotations = d3
     .annotation()
     // .editMode(true)
@@ -463,6 +519,9 @@ function generateBubbleChart() {
     "Total matches played since 1877, by teams";
   document.getElementById("text-description").innerHTML =
     '<object type="text/html" data="matches.html" style="width:100%; height: 100%;" ></object>';
+
+  document.getElementById("tips-txt").innerHTML =
+    "Hover over team bubble to see additional stats; click on bubble to navigate to team's historical performance";
 
   const formattedTeamData = enrichTeamData(teamData);
   const nodes = generateBubbleNodes(formattedTeamData);
@@ -607,6 +666,9 @@ function generateLineChart(dataPoint) {
   document.getElementById("text-description").innerHTML =
     '<object type="text/html" data="runs.html" style="width:100%; height: 100%;"></object>';
 
+  document.getElementById("tips-txt").innerHTML =
+    "Hover over team name or line in the chart to see additional stats; click on the line to navigate to team's historical performance";
+
   matchData = enrichMatchData(matchDataOverAll);
 
   recycleSvgContainter(chartList[0]);
@@ -719,7 +781,7 @@ function setXYDomain(data) {
   ]);
 }
 
-function generateAxis(xAxisLabel, yAxisLabel) {
+function generateAxis(xAxisLabel, yAxisLabel, barWidth) {
   // Create X & Y Axis
   const yAxis = bounds
     .append("g")
@@ -732,8 +794,17 @@ function generateAxis(xAxisLabel, yAxisLabel) {
     .attr("class", "axis")
     .attr("class", "xAxis")
     .call(xAxisGenerator.tickFormat(d3.format("d")))
-    .style("transform", `translateY(${dimensions.boundedHeight}px)`);
+    .style(
+      "transform",
+      `translate(${barWidth ? barWidth / 2 : 0}px, ${
+        dimensions.boundedHeight
+      }px)`
+    );
 
+  if (barWidth) {
+    console.log("barWidth", barWidth);
+    xAxis.attr("transform", "translate(" + barWidth / 2 + ",0");
+  }
   yAxis
     .append("text")
     .attr("class", "axis-label")
@@ -1019,7 +1090,7 @@ function calculateDimension() {
     width: svg.attr("width"),
     heigth: svg.attr("height"),
     margin: {
-      top: 50,
+      top: 40,
       right: 100,
       bottom: 50,
       left: 80,
