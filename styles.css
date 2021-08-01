@@ -40,14 +40,29 @@ body {
   /* background-color: #b7e0ff; */
   display: grid;
   grid-row: 2;
-  grid-template-columns: 1fr 3fr;
+  grid-template-columns: 1.1fr 2.9fr;
 }
 
 .text-description {
+  grid-column: 1;
+  background-color: #d4d1d1;
+  margin: 50px 0px 20px 20px;
   padding-left: 20px;
   padding-right: 10px;
-  display: grid;
-  grid-column: 1;
+  padding-bottom: 0px;
+  display: flex;
+}
+
+.text-desc {
+  font-size: 14px;
+  word-wrap: normal;
+}
+
+.text-desc-hdr {
+  color: grey;
+}
+.team-list {
+  font-size: 14px;
 }
 
 .chart-data {

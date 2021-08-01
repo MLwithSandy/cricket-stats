@@ -93,8 +93,9 @@ async function showMainChart() {
   teamResultData_fmt = enrichTeamResultData(teamResultData);
 
   generateLineChart();
+  // generateBubbleChart();
 
-  // generateStackedBarChart("South Africa");
+  generateStackedBarChart("India");
 }
 
 /*
@@ -193,6 +194,11 @@ function generateStackedBarChart(teamName) {
   document.getElementById("main-page-sub-header").innerHTML =
     "Overview of match results, by team";
 
+  document.getElementById("text-description").innerHTML =
+    '<object type="text/html" data="team-' +
+    teamName.replace(/\s/g, "").toLowerCase() +
+    '.html" style="width:100%; height: 100%;" ></object>';
+
   var data = teamResultData_fmt.filter((f) => f.team == teamName);
 
   var keys = ["Lost", "Won", "Undecided"];
@@ -273,6 +279,8 @@ function generateStackedBarChart(teamName) {
   drawStackedBarChart(dataList, resultList, barWidth, keys);
 
   createLegend();
+
+  generateAnnotationsStackedBarChart(teamName);
 }
 
 function drawStackedBarChart(data, resultList, barWidth, keys) {
@@ -371,9 +379,90 @@ function createLegend() {
     });
 }
 
+function generateAnnotationsStackedBarChart(teamName) {
+  const annotations = [];
+
+  if (
+    teamName == "Australia" ||
+    teamName == "England" ||
+    teamName == "West Indies" ||
+    teamName == "South Africa" ||
+    teamName == "India" ||
+    teamName == "New Zealand"
+  ) {
+    annotations.push({
+      note: {
+        label: "No test matches were played.",
+        title: "First World War",
+      },
+      x: xScale(1918),
+      y: yScale(0),
+      dy: -320,
+      dx: -10,
+    });
+    annotations.push({
+      note: {
+        label: "No test matches were played.",
+        title: "Second World War",
+      },
+      x: xScale(1941),
+      y: yScale(0),
+      dy: -320,
+      dx: +10,
+    });
+  }
+
+  if (teamName == "South Africa") {
+    annotations.push({
+      note: {
+        label:
+          "The anti-apartheid movement led the ICC to impose a moratorium on South Africa 🇿🇦 tours.",
+        title: "The international ban 1970 - 1990",
+      },
+      x: xScale(1971),
+      y: yScale(0),
+      dy: -220,
+      dx: +10,
+    });
+    annotations.push({
+      note: {
+        label: "",
+        title: "",
+      },
+      x: xScale(1991),
+      y: yScale(0),
+      dy: -220,
+      dx: -10,
+    });
+  }
+
+  if (teamName == "India") {
+    annotations.push({
+      note: {
+        label:
+          "India recorded first test victory against England at Madras in 1952.",
+        title: "1952",
+      },
+      x: xScale(1952),
+      y: yScale(6),
+      dy: -150,
+      dx: +40,
+    });
+  }
+
+  const makeAnnotations = d3
+    .annotation()
+    // .editMode(true)
+    .annotations(annotations);
+
+  bounds.append("g").attr("class", "annotation-group").call(makeAnnotations);
+}
+
 function generateBubbleChart() {
   document.getElementById("main-page-sub-header").innerHTML =
     "Total matches played since 1877, by teams";
+  document.getElementById("text-description").innerHTML =
+    '<object type="text/html" data="matches.html" style="width:100%; height: 100%;" ></object>';
 
   const formattedTeamData = enrichTeamData(teamData);
   const nodes = generateBubbleNodes(formattedTeamData);
@@ -515,6 +604,9 @@ function generateLineChart(dataPoint) {
   document.getElementById("main-page-sub-header").innerHTML =
     "Total runs scored since 1877, by teams";
 
+  document.getElementById("text-description").innerHTML =
+    '<object type="text/html" data="runs.html" style="width:100%; height: 100%;"></object>';
+
   matchData = enrichMatchData(matchDataOverAll);
 
   recycleSvgContainter(chartList[0]);
@@ -608,7 +700,7 @@ function drawLineChart(data) {
     })
     .attr("transform", "translate(10, 0)")
     .style("fill", (d) => d.Color)
-    .text((d) => d.Team + " " + teamFlags[teamList.indexOf(d.Team)])
+    .text((d) => teamFlags[teamList.indexOf(d.Team)] + " " + d.Team)
     .on("mouseover", handleMouseOver)
     .on("mouseout", handleMouseOut)
     .on("click", handleMouseClick);
@@ -714,8 +806,8 @@ function generateAnnotations() {
       },
       x: xScale(2018),
       y: yScale(0),
-      dy: -150,
-      dx: -100,
+      dy: -250,
+      dx: -200,
     },
   ];
 
