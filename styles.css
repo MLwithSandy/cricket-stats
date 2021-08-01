@@ -69,10 +69,12 @@ body {
 .text-desc {
   font-size: 14px;
   word-wrap: normal;
+  padding: 0px;
 }
 
 .text-desc-hdr {
   color: grey;
+  padding: 0px;
 }
 .team-list {
   font-size: 14px;

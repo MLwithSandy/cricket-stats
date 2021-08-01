@@ -193,7 +193,7 @@ function recycleSvgContainter(svgClass) {
 
 function generateStackedBarChart(teamName) {
   document.getElementById("main-page-sub-header").innerHTML =
-    "Team's historical performance - wins, losses and draws (undecided)";
+    "Team's historical performances - wins, losses and draws (undecided)";
 
   document.getElementById("text-description").innerHTML =
     '<object type="text/html" data="team-' +
@@ -518,7 +518,7 @@ function generateAnnotationsStackedBarChart(teamName) {
 
 function generateBubbleChart() {
   document.getElementById("main-page-sub-header").innerHTML =
-    "Number of matches played by various teams since 1877";
+    "Journey through number of matches since 1877";
   document.getElementById("text-description").innerHTML =
     '<object type="text/html" data="matches.html" style="width:100%; height: 100%;" ></object>';
 
@@ -663,7 +663,7 @@ function generateLineChart(dataPoint) {
   //data preparation
 
   document.getElementById("main-page-sub-header").innerHTML =
-    'Teams with "Test" status and runs scored so far';
+    "Team's journey through scored runs, cumulated over playing years";
 
   document.getElementById("text-description").innerHTML =
     '<object type="text/html" data="runs.html" style="width:100%; height: 100%;"></object>';
