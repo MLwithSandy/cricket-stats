@@ -62,6 +62,7 @@ var teamData, matchData, teamList, matchDataOverAll, teamResultData;
 const chartContainer = "#main-page-chart-containter";
 const tooltips = document.querySelectorAll(".custom-tooltip");
 const cutOffYear = 2021;
+var keys = ["Lost", "Won", "Undecided"];
 
 var svg = d3.select("svg");
 const dimensions = calculateDimension();
@@ -192,18 +193,16 @@ function recycleSvgContainter(svgClass) {
 
 function generateStackedBarChart(teamName) {
   document.getElementById("main-page-sub-header").innerHTML =
-    "Overview of match results, by team";
+    "Team's historical performance - wins, losses and draws (undecided)";
 
   document.getElementById("text-description").innerHTML =
     '<object type="text/html" data="team-' +
     teamName.replace(/\s/g, "").toLowerCase() +
     '.html" style="width:100%; height: 100%;" ></object>';
   document.getElementById("tips-txt").innerHTML =
-    "Hover over the bar chart to see match stats in that year;";
+    "Hover over the bar chart to see team stats in that year; click on the color in the barchart to make it the base of the chart";
 
   var data = teamResultData_fmt.filter((f) => f.team == teamName);
-
-  var keys = ["Lost", "Won", "Undecided"];
 
   var dataList = data.map((d) => d.values)[0];
   var years = [...new Set(dataList.map((d) => d.Year))];
@@ -308,7 +307,10 @@ function drawStackedBarChart(data, resultList, barWidth, keys) {
     .enter()
     .append("g")
     .classed("layer", true)
-    .attr("fill", (d) => zScale(d.key));
+    .attr("fill", (d) => zScale(d.key))
+    .on("click", (d, i) =>
+      handleMouseClickStackedBar(d, i, resultList[0].team)
+    );
 
   bounds
     .selectAll("g.layer")
@@ -516,7 +518,7 @@ function generateAnnotationsStackedBarChart(teamName) {
 
 function generateBubbleChart() {
   document.getElementById("main-page-sub-header").innerHTML =
-    "Total matches played since 1877, by teams";
+    "Number of matches played by various teams since 1877";
   document.getElementById("text-description").innerHTML =
     '<object type="text/html" data="matches.html" style="width:100%; height: 100%;" ></object>';
 
@@ -524,7 +526,7 @@ function generateBubbleChart() {
     "Hover over team bubble to see additional stats; click on bubble to navigate to team's historical performance";
 
   const formattedTeamData = enrichTeamData(teamData);
-  const nodes = generateBubbleNodes(formattedTeamData);
+  const nodes = createBubbleNodes(formattedTeamData);
   center = { x: dimensions.width / 2, y: dimensions.heigth / 2 };
 
   const forceStrength = 0.01;
@@ -640,7 +642,7 @@ function drawBubbleChart(nodes) {
     .text((d) => d.Team);
 }
 
-function generateBubbleNodes(data) {
+function createBubbleNodes(data) {
   const maxSize = d3.max(data, (d) => 4 + d.Mat * 5);
 
   const radiusScale = d3
@@ -661,7 +663,7 @@ function generateLineChart(dataPoint) {
   //data preparation
 
   document.getElementById("main-page-sub-header").innerHTML =
-    "Total runs scored since 1877, by teams";
+    'Teams with "Test" status and runs scored so far';
 
   document.getElementById("text-description").innerHTML =
     '<object type="text/html" data="runs.html" style="width:100%; height: 100%;"></object>';
@@ -802,7 +804,6 @@ function generateAxis(xAxisLabel, yAxisLabel, barWidth) {
     );
 
   if (barWidth) {
-    console.log("barWidth", barWidth);
     xAxis.attr("transform", "translate(" + barWidth / 2 + ",0");
   }
   yAxis
@@ -920,6 +921,12 @@ function handleMouseOverStackedBar(d) {
   document.getElementById("row-runs").style.display = "none";
 }
 
+function handleMouseClickStackedBar(d, i, teamName) {
+  var keys_save = keys.slice(0);
+  keys[0] = keys_save[i];
+  keys[i] = keys_save[0];
+  generateStackedBarChart(teamName);
+}
 function handleMouseOutStackedBar(d, i) {
   handleMouseOut();
   document.getElementById("row-won").style.display = "";
