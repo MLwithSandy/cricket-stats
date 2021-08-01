@@ -15,7 +15,7 @@
             <svg width="1024" height="500"></svg>
             <div id="team-details" class="custom-tooltip closed">
               <div id="custom-tooltip-header" class="custom-tooltip-header">
-                <div id="td-team-name"></div>
+                <div id="td-team-name" class="teamName"></div>
                 <div id="td-test-status-year" class="custom-tooltip-text"></div>
               </div>
               <table>
@@ -58,16 +58,32 @@
             </div>
           </div>
           <div id="nav-row" class="nav-row nav nav2">
-            <a id="first-btn" class="first round" onclick="firstChart()"
+            <a
+              id="first-btn"
+              class="first round"
+              title="First Scene"
+              onclick="firstChart()"
               >&#8249;&#8249;</a
             >
-            <a id="prev-btn" class="previous round" onclick="prevChart()"
+            <a
+              id="prev-btn"
+              class="previous round"
+              title="Previous Scene"
+              onclick="prevChart()"
               >&#8249;</a
             >
-            <a id="next-btn" class="next round" onclick="nextChart()"
+            <a
+              id="next-btn"
+              class="next round"
+              title="Next Scene"
+              onclick="nextChart()"
               >&#8250;</a
             >
-            <a id="last-btn" class="last round" onclick="lastChart()"
+            <a
+              id="last-btn"
+              class="last round"
+              title="Last Scene"
+              onclick="lastChart()"
               >&#8250;&#8250;</a
             >
           </div>

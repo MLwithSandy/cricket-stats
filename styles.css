@@ -134,13 +134,15 @@ body {
 
 .closed {
   max-height: 0;
+  padding: 0px;
 }
 
 .float-container .custom-tooltip {
   display: none;
-  background: whitesmoke;
+  background-color: rgba(0, 0, 0, 0.7);
   border: black;
   border-width: thin;
+  border-radius: 5px;
 }
 
 .float-container:hover .custom-tooltip {
@@ -149,31 +151,47 @@ body {
   overflow: hidden;
 }
 
+.teamName {
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-top: 5px;
+  font-weight: bold;
+}
 .col-header {
+  padding-left: 5px;
+  padding-right: 5px;
   font-weight: normal;
-  font-size: x-small;
-  color: rgb(91, 90, 90);
+  font-size: small;
+  color: white;
 }
 
 .col-data {
   font-weight: bold;
-  font-size: xx-small;
-  color: grey;
+  font-size: x-small;
+  color: white;
 }
 
 .col-data-right {
   text-align: right;
+  color: white;
 }
 
 .custom-tooltip-header {
+  padding-left: 5px;
+  padding-right: 5px;
   display: grid;
+  color: white;
   grid-template-rows: 1fr 1fr;
 }
 
 .custom-tooltip-text {
   font-weight: normal;
-  font-size: x-small;
-  color: rgb(91, 90, 90);
+  font-size: small;
+  color: white;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin-top: 2px;
+  margin-bottom: 5px;
 }
 
 .grid line {
